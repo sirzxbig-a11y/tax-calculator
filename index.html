@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -172,11 +171,35 @@
     font-weight:500;
   }
 
+  /* ---------- 清空按钮 ---------- */
+  .clear-btn{
+    width:100%;
+    margin-top:2px;
+    padding:12px;
+    font-family:inherit;
+    font-size:14px;
+    font-weight:500;
+    color:var(--muted);
+    background:#f9fafb;
+    border:1.5px dashed var(--border);
+    border-radius:12px;
+    cursor:pointer;
+    transition:.18s;
+  }
+
+  .clear-btn:hover{
+    color:#ef4444;
+    border-color:#fca5a5;
+    background:#fef2f2;
+  }
+
+  .clear-btn:active{ transform:scale(.995); }
+
   button:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
 
   /* ---------- 结果 ---------- */
   .results{
-    margin-top:24px;
+    margin-top:20px;
     padding-top:20px;
     border-top:1px dashed var(--border);
     display:flex;
@@ -275,7 +298,7 @@
   </div>
 
   <!-- 税率 -->
-  <div class="field" style="margin-bottom:6px;">
+  <div class="field" style="margin-bottom:14px;">
     <label for="rate">税率（税点）</label>
     <div class="input-wrap with-suffix">
       <input type="number" id="rate" value="6" step="0.01" min="0"
@@ -290,6 +313,9 @@
       <button type="button" class="chip" data-rate="13">13%</button>
     </div>
   </div>
+
+  <!-- 清空按钮 -->
+  <button type="button" class="clear-btn" id="clearBtn">清空重填</button>
 
   <!-- 结果 -->
   <div class="results">
@@ -330,9 +356,9 @@
   var modeBtns   = document.querySelectorAll('#modeSwitch button');
   var chips      = document.querySelectorAll('.chip');
   var toast      = document.getElementById('toast');
+  var clearBtn   = document.getElementById('clearBtn');
 
-  // 实际金额的默认含义：含税金额
-  var mode = 'withTax';
+  var mode = 'withTax';   // 实际金额默认含义：含税金额
 
   /* 金额格式化：¥ 1,234.56 */
   function money(n) {
@@ -368,11 +394,9 @@
     var noTax, withTax;
 
     if (mode === 'withTax') {
-      // 输入的是含税金额
       withTax = amt;
       noTax   = (r === 0) ? amt : amt / (1 + r);
     } else {
-      // 输入的是不含税金额
       noTax   = amt;
       withTax = amt * (1 + r);
     }
@@ -414,6 +438,28 @@
       calc();
     });
   }
+
+  /* ---------- 清空重填 ---------- */
+  clearBtn.addEventListener('click', function () {
+    // 清空金额
+    amountEl.value = '';
+
+    // 税率恢复默认 6%
+    rateEl.value = '6';
+    syncChips();
+
+    // 金额类型恢复为“含税金额”
+    mode = 'withTax';
+    for (var i = 0; i < modeBtns.length; i++) {
+      modeBtns[i].classList.toggle('active', modeBtns[i].dataset.mode === 'withTax');
+    }
+
+    // 结果区归零
+    calc();
+
+    // 焦点回到金额输入框，方便重新输入
+    amountEl.focus();
+  });
 
   /* ---------- 点击结果复制 ---------- */
   function showToast(msg) {
