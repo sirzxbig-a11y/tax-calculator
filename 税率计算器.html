@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>税率计算器 | 含税金额 · 不含税金额 · 税额</title>
+<style>
+  :root{
+    --primary:#6366f1;
+    --primary-dark:#4f46e5;
+    --text:#1f2937;
+    --muted:#6b7280;
+    --border:#e5e7eb;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  body{
+    font-family:-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+                "Microsoft YaHei", sans-serif;
+    background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:32px 16px;
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .card{
+    width:100%;
+    max-width:440px;
+    background:#fff;
+    border-radius:20px;
+    padding:28px 26px 24px;
+    box-shadow:0 24px 60px rgba(0,0,0,.25);
+  }
+
+  h1{
+    font-size:20px;
+    font-weight:600;
+    text-align:center;
+    letter-spacing:.5px;
+  }
+
+  .subtitle{
+    text-align:center;
+    font-size:13px;
+    color:var(--muted);
+    margin:6px 0 24px;
+  }
+
+  .field{ margin-bottom:18px; }
+
+  .field > label{
+    display:block;
+    font-size:13px;
+    font-weight:500;
+    color:var(--muted);
+    margin-bottom:8px;
+  }
+
+  /* ---------- 输入框 ---------- */
+  .input-wrap{ position:relative; }
+
+  .input-wrap input{
+    width:100%;
+    padding:14px 16px;
+    font-size:17px;
+    font-weight:500;
+    font-variant-numeric:tabular-nums;
+    font-family:inherit;
+    color:var(--text);
+    background:#fafafa;
+    border:2px solid var(--border);
+    border-radius:12px;
+    outline:none;
+    transition:border-color .18s, box-shadow .18s, background .18s;
+    -moz-appearance:textfield;
+  }
+
+  .input-wrap input::-webkit-outer-spin-button,
+  .input-wrap input::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+
+  .input-wrap input::placeholder{ color:#c4c9d4; font-weight:400; }
+
+  .input-wrap input:focus{
+    border-color:var(--primary);
+    background:#fff;
+    box-shadow:0 0 0 4px rgba(99,102,241,.13);
+  }
+
+  .input-wrap.big input{
+    font-size:22px;
+    padding:16px 18px;
+  }
+
+  .input-wrap.with-prefix input{ padding-left:36px; }
+  .input-wrap.with-suffix input{ padding-right:44px; }
+
+  .prefix, .suffix{
+    position:absolute;
+    top:50%;
+    transform:translateY(-50%);
+    font-weight:500;
+    color:#9ca3af;
+    pointer-events:none;
+  }
+  .prefix{ left:16px; font-size:18px; }
+  .suffix{ right:16px; font-size:15px; }
+
+  /* ---------- 金额类型切换 ---------- */
+  .segmented{
+    display:flex;
+    background:#f3f4f6;
+    border-radius:11px;
+    padding:3px;
+    margin-top:10px;
+  }
+
+  .segmented button{
+    flex:1;
+    padding:8px 0;
+    font-family:inherit;
+    font-size:13px;
+    color:var(--muted);
+    background:transparent;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    transition:.18s;
+  }
+
+  .segmented button.active{
+    background:#fff;
+    color:var(--primary);
+    font-weight:600;
+    box-shadow:0 1px 3px rgba(0,0,0,.1);
+  }
+
+  /* ---------- 常用税率 ---------- */
+  .chips{
+    display:flex;
+    gap:6px;
+    margin-top:10px;
+  }
+
+  .chip{
+    flex:1;
+    padding:7px 0;
+    font-family:inherit;
+    font-size:12.5px;
+    color:var(--muted);
+    background:#fff;
+    border:1.5px solid var(--border);
+    border-radius:8px;
+    cursor:pointer;
+    transition:.15s;
+  }
+
+  .chip:hover{ border-color:var(--primary); color:var(--primary); }
+
+  .chip.active{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+    font-weight:500;
+  }
+
+  button:focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+
+  /* ---------- 结果 ---------- */
+  .results{
+    margin-top:24px;
+    padding-top:20px;
+    border-top:1px dashed var(--border);
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+
+  .results-title{
+    font-size:12px;
+    color:#9ca3af;
+    letter-spacing:.5px;
+    margin-bottom:2px;
+  }
+
+  .result{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    padding:13px 15px;
+    border-radius:12px;
+    background:#fafafa;
+    border:1.5px solid transparent;
+    cursor:pointer;
+    transition:.15s;
+  }
+
+  .result:hover{ background:#f3f4f6; }
+  .result:active{ transform:scale(.995); }
+
+  .result.highlight{
+    background:#eef2ff;
+    border-color:#c7d2fe;
+  }
+
+  .r-label{ font-size:13px; color:var(--muted); white-space:nowrap; }
+
+  .r-value{
+    font-size:17px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+    color:var(--text);
+    margin-left:12px;
+    text-align:right;
+  }
+
+  .result.highlight .r-label{ color:#4f46e5; font-weight:500; }
+  .result.highlight .r-value{ color:var(--primary-dark); font-size:19px; }
+
+  .hint{
+    margin-top:14px;
+    font-size:11.5px;
+    line-height:1.8;
+    color:#b0b6c1;
+    text-align:center;
+  }
+
+  /* ---------- 复制提示 ---------- */
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:40px;
+    transform:translateX(-50%) translateY(10px);
+    background:rgba(31,41,55,.92);
+    color:#fff;
+    font-size:13px;
+    padding:9px 20px;
+    border-radius:20px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s, transform .25s;
+    z-index:99;
+  }
+
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>税率计算器</h1>
+  <p class="subtitle">填写金额与税点，自动换算税额</p>
+
+  <!-- 实际金额 -->
+  <div class="field">
+    <label for="amount">实际金额</label>
+    <div class="input-wrap big with-prefix">
+      <span class="prefix">¥</span>
+      <input type="number" id="amount" value="68400" step="0.01"
+             inputmode="decimal" placeholder="0.00">
+    </div>
+
+    <div class="segmented" id="modeSwitch">
+      <button type="button" data-mode="withTax" class="active">这是含税金额</button>
+      <button type="button" data-mode="noTax">这是不含税金额</button>
+    </div>
+  </div>
+
+  <!-- 税率 -->
+  <div class="field" style="margin-bottom:6px;">
+    <label for="rate">税率（税点）</label>
+    <div class="input-wrap with-suffix">
+      <input type="number" id="rate" value="6" step="0.01" min="0"
+             inputmode="decimal" placeholder="0">
+      <span class="suffix">%</span>
+    </div>
+    <div class="chips">
+      <button type="button" class="chip" data-rate="1">1%</button>
+      <button type="button" class="chip" data-rate="3">3%</button>
+      <button type="button" class="chip active" data-rate="6">6%</button>
+      <button type="button" class="chip" data-rate="9">9%</button>
+      <button type="button" class="chip" data-rate="13">13%</button>
+    </div>
+  </div>
+
+  <!-- 结果 -->
+  <div class="results">
+    <div class="results-title">计算结果（点击可复制）</div>
+
+    <div class="result highlight">
+      <span class="r-label">不含税金额</span>
+      <span class="r-value" id="outNoTax">—</span>
+    </div>
+
+    <div class="result">
+      <span class="r-label">税额</span>
+      <span class="r-value" id="outTax">—</span>
+    </div>
+
+    <div class="result">
+      <span class="r-label">含税金额</span>
+      <span class="r-value" id="outWithTax">—</span>
+    </div>
+  </div>
+
+  <p class="hint">
+    不含税金额 = 含税金额 ÷（1 + 税率）　｜　税额 = 不含税金额 × 税率
+  </p>
+</div>
+
+<div class="toast" id="toast">已复制</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var amountEl   = document.getElementById('amount');
+  var rateEl     = document.getElementById('rate');
+  var outNoTax   = document.getElementById('outNoTax');
+  var outTax     = document.getElementById('outTax');
+  var outWithTax = document.getElementById('outWithTax');
+  var modeBtns   = document.querySelectorAll('#modeSwitch button');
+  var chips      = document.querySelectorAll('.chip');
+  var toast      = document.getElementById('toast');
+
+  // 实际金额的默认含义：含税金额
+  var mode = 'withTax';
+
+  /* 金额格式化：¥ 1,234.56 */
+  function money(n) {
+    return '¥ ' + n.toLocaleString('zh-CN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  }
+
+  /* 高亮选中的常用税率 */
+  function syncChips() {
+    var v = parseFloat(rateEl.value);
+    for (var i = 0; i < chips.length; i++) {
+      chips[i].classList.toggle('active', parseFloat(chips[i].dataset.rate) === v);
+    }
+  }
+
+  /* 核心计算 */
+  function calc() {
+    var raw = amountEl.value.trim();
+    var amt = parseFloat(raw);
+    var ratePct = parseFloat(rateEl.value);
+    var r = (!isNaN(ratePct) && ratePct > 0) ? ratePct / 100 : 0;
+
+    // 未输入金额 → 显示占位符
+    if (raw === '' || isNaN(amt)) {
+      outNoTax.textContent   = '—';
+      outTax.textContent     = '—';
+      outWithTax.textContent = '—';
+      return;
+    }
+
+    var noTax, withTax;
+
+    if (mode === 'withTax') {
+      // 输入的是含税金额
+      withTax = amt;
+      noTax   = (r === 0) ? amt : amt / (1 + r);
+    } else {
+      // 输入的是不含税金额
+      noTax   = amt;
+      withTax = amt * (1 + r);
+    }
+
+    var tax = withTax - noTax;
+
+    outNoTax.textContent   = money(noTax);
+    outTax.textContent     = money(tax);
+    outWithTax.textContent = money(withTax);
+  }
+
+  /* ---------- 事件绑定 ---------- */
+
+  amountEl.addEventListener('input', calc);
+  amountEl.addEventListener('change', calc);
+
+  rateEl.addEventListener('input', function () {
+    syncChips();
+    calc();
+  });
+
+  // 金额类型切换
+  for (var i = 0; i < modeBtns.length; i++) {
+    modeBtns[i].addEventListener('click', function () {
+      for (var j = 0; j < modeBtns.length; j++) {
+        modeBtns[j].classList.remove('active');
+      }
+      this.classList.add('active');
+      mode = this.dataset.mode;
+      calc();
+    });
+  }
+
+  // 常用税率
+  for (var k = 0; k < chips.length; k++) {
+    chips[k].addEventListener('click', function () {
+      rateEl.value = this.dataset.rate;
+      syncChips();
+      calc();
+    });
+  }
+
+  /* ---------- 点击结果复制 ---------- */
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(function () {
+      toast.classList.remove('show');
+    }, 1400);
+  }
+
+  var resultEls = document.querySelectorAll('.result');
+  for (var m = 0; m < resultEls.length; m++) {
+    resultEls[m].addEventListener('click', function () {
+      var txt = this.querySelector('.r-value').textContent;
+      if (!txt || txt === '—') return;
+      var plain = txt.replace(/[¥,\s]/g, '');
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(plain).then(function () {
+          showToast('已复制 ' + plain);
+        }, function () {
+          showToast('复制失败，请手动选择');
+        });
+      } else {
+        showToast('复制失败，请手动选择');
+      }
+    });
+  }
+
+  /* 初始化 */
+  syncChips();
+  calc();
+})();
+</script>
+
+</body>
+</html>
